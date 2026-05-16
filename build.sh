@@ -17,11 +17,11 @@ if [ "$TOOL" != "docker" ] && [ "$TOOL" != "podman" ]; then
 fi
 
 function get_latest_release_tag() {
-    SB_TAG=$(curl https://api.github.com/repos/sbpp/sourcebans-pp/releases -s | jq -r ".[].tag_name" | grep '^1\.7\.[0-9]*$' -m1)
+    SB_TAG=$(curl https://api.github.com/repos/sbpp/sourcebans-pp/releases -s | jq -r '.[0].tag_name')
     echo $SB_TAG
 }
 
 SB_TAG=$(get_latest_release_tag)
 
 $TOOL build -t crinis/sourcebans:sb-${SB_TAG} -t crinis/sourcebans:latest --build-arg CHECKOUT="${SB_TAG}" .
-$TOOL build -t crinis/sourcebans:sb-dev --build-arg CHECKOUT="php81" .
+$TOOL build -t crinis/sourcebans:sb-dev --build-arg CHECKOUT="main" .
