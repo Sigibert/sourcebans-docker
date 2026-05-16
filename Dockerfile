@@ -1,12 +1,14 @@
-FROM composer:2.5.8 AS composer
-ARG CHECKOUT=1.7.0
+FROM composer:2.8 AS composer          # update from 2.5.8
+ARG CHECKOUT=1.8.4
 
 RUN git clone https://github.com/sbpp/sourcebans-pp.git && \
     git -C sourcebans-pp checkout ${CHECKOUT} && \
-    composer install --no-dev --no-interaction --no-progress --optimize-autoloader --ignore-platform-reqs --working-dir=sourcebans-pp/web/
+    composer install --no-dev --no-interaction --no-progress \
+      --optimize-autoloader --ignore-platform-reqs \
+      --working-dir=sourcebans-pp/web/
 
 # Build the actual image
-FROM php:8.1-apache
+FROM php:8.2-apache                    # update from 8.1
 
 ENV INSTALL=false \
     SET_OWNER_UID=33 \
