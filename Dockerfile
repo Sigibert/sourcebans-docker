@@ -8,7 +8,7 @@ RUN git clone https://github.com/sbpp/sourcebans-pp.git && \
       --working-dir=sourcebans-pp/web/
 
 # Build the actual image
-FROM php:8.2-apache
+FROM php:8.5-apache
 
 ENV INSTALL=false \
     SET_OWNER_UID=33 \
