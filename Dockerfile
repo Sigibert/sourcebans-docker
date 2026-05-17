@@ -1,4 +1,4 @@
-FROM composer:2.8 AS composer          # update from 2.5.8
+FROM composer:2.8 AS composer
 ARG CHECKOUT=1.8.4
 
 RUN git clone https://github.com/sbpp/sourcebans-pp.git && \
@@ -8,7 +8,7 @@ RUN git clone https://github.com/sbpp/sourcebans-pp.git && \
       --working-dir=sourcebans-pp/web/
 
 # Build the actual image
-FROM php:8.2-apache                    # update from 8.1
+FROM php:8.2-apache
 
 ENV INSTALL=false \
     SET_OWNER_UID=33 \
