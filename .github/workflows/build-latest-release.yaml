@@ -1,6 +1,11 @@
 name: build-latest-release
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      force_build:
+        description: 'Force build even if image already exists'
+        required: false
+        default: 'false'
   schedule:
     - cron: "0 2 * * 2"
 
@@ -12,15 +17,40 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       release-tag: ${{ steps.get-release-tag.outputs.release-tag }}
+      should-build: ${{ steps.check-existing.outputs.should-build }}
     steps:
       - name: Get latest sbpp release
         id: get-release-tag
         run: |
           echo "release-tag=$(curl https://api.github.com/repos/sbpp/sourcebans-pp/releases/latest -s | jq -r '.tag_name')" >> $GITHUB_OUTPUT
 
+      - name: Check if image already exists on Docker Hub
+        id: check-existing
+        run: |
+          RELEASE_TAG=${{ steps.get-release-tag.outputs.release-tag }}
+          FORCE=${{ github.event.inputs.force_build || 'false' }}
+          
+          if [ "$FORCE" = "true" ]; then
+            echo "Force build requested, skipping existence check"
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://hub.docker.com/v2/repositories/${{ secrets.DOCKERHUB_USERNAME }}/${IMAGE_NAME}/tags/${RELEASE_TAG}")
+          
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "Image $RELEASE_TAG already exists, skipping build"
+            echo "should-build=false" >> $GITHUB_OUTPUT
+          else
+            echo "Image $RELEASE_TAG not found, build needed"
+            echo "should-build=true" >> $GITHUB_OUTPUT
+          fi
+
   build-amd64:
     runs-on: ubuntu-24.04
     needs: get-release-tag
+    if: needs.get-release-tag.outputs.should-build == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,6 +80,7 @@ jobs:
   build-arm64:
     runs-on: ubuntu-24.04-arm
     needs: get-release-tag
+    if: needs.get-release-tag.outputs.should-build == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -79,6 +110,7 @@ jobs:
   create-manifests:
     runs-on: ubuntu-24.04
     needs: [get-release-tag, build-amd64, build-arm64]
+    if: needs.get-release-tag.outputs.should-build == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
